@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pocket Moodle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/vars.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/sidebar.css" />
+  <link rel="stylesheet" href="css/chat.css" />
+  <link rel="stylesheet" href="css/faq.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/profile.css" />
+  <link rel="stylesheet" href="css/map.css" />
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<div id="auth-screen">
+  <div class="auth-glow g1"></div>
+  <div class="auth-glow g2"></div>
+  <div class="auth-glow g3"></div>
+
+  <div class="auth-card" id="auth-card">
+    <div class="auth-brand">
+      <div class="brand-mark">⬡</div>
+      <div>
+        <div class="brand-name">Pocket Moodle</div>
+        <div class="brand-sub">Astana IT University</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs" id="auth-tabs">
+      <button class="atab active" data-tab="login">Вход</button>
+      <button class="atab" data-tab="register">Регистрация</button>
+      <span class="atab-slider"></span>
+    </div>
+
+    <!-- LOGIN -->
+    <form class="aform active" id="form-login" onsubmit="Auth.login(event)">
+      <h2 class="aform-title">С возвращением 👋</h2>
+      <p class="aform-sub">Войдите, чтобы продолжить</p>
+      <div class="field">
+        <label>Электронная почта</label>
+        <input type="email" name="email" placeholder="you@astanait.edu.kz" required />
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" name="password" placeholder="••••••••" required />
+      </div>
+      <div class="form-err" id="login-err"></div>
+      <button type="submit" class="btn-submit">
+        <span>Войти</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+
+    <!-- REGISTER -->
+    <form class="aform" id="form-register" onsubmit="Auth.register(event)">
+      <h2 class="aform-title">Создать аккаунт</h2>
+      <p class="aform-sub">Заполните данные для регистрации</p>
+      <div class="field">
+        <div class="field">
+          <label>Имя и фамилия</label>
+          <input type="text" name="name" placeholder="Ахмет Сейткали" required />
+        </div>
+      </div>
+      <div class="field">
+          <label>Группа</label>
+          <input type="text" name="group" placeholder="SE-2201" required />
+        </div>
+      <div class="field">
+        <label>Электронная почта</label>
+        <input type="email" name="email" placeholder="you@astanait.edu.kz" required />
+      </div>
+      <div class="field">
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" name="password" placeholder="минимум 6 символов" required />
+        </div>
+      </div>
+      <div class="field">
+          <label>Подтверждение</label>
+          <input type="password" name="confirm" placeholder="повторите пароль" required />
+        </div>
+      <div class="form-err" id="reg-err"></div>
+      <button type="submit" class="btn-submit">
+        <span>Зарегистрироваться</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+
+  <!-- LEFT SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sb-top">
+      <div class="sb-brand">
+        <span class="sb-mark">⬡</span>
+        <span class="sb-title">Pocket Moodle</span>
+      </div>
+      <button class="sb-collapse" onclick="UI.toggleSidebar()" title="Свернуть">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <nav class="sb-nav">
+      <button class="nb active" data-page="chat" onclick="UI.nav('chat')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Чат</span>
+      </button>
+      <button class="nb" data-page="dashboard" onclick="UI.nav('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Дедлайны</span>
+      </button>
+      <button class="nb" data-page="schedule" onclick="UI.nav('schedule')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Расписание</span>
+      </button>
+      <button class="nb" data-page="attendance" onclick="UI.nav('attendance')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>Attendance</span>
+      </button>
+      <button class="nb" data-page="teachers" onclick="UI.nav('teachers')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6"/><circle cx="17" cy="17" r="3"/><path d="M22 22l-3-3"/></svg>
+        <span>Преподаватели</span>
+      </button>
+      <button class="nb" data-page="syllabus" onclick="UI.nav('syllabus')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 012-2h12v18H6a2 2 0 01-2-2z"/><path d="M8 7h6M8 11h8M8 15h5"/></svg>
+        <span>Силлабусы</span>
+      </button>
+      <button class="nb" data-page="profile" onclick="UI.nav('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6l-.04.06a2 2 0 01-3.92 0L10 20a1.7 1.7 0 00-1-.6 1.7 1.7 0 00-1.88.34l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-.6-1l-.06-.04a2 2 0 010-3.92L4 10a1.7 1.7 0 00.6-1 1.7 1.7 0 00-.34-1.88l-.06-.06a2 2 0 012.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-.6l.04-.06a2 2 0 013.92 0L14 4a1.7 1.7 0 001 .6 1.7 1.7 0 001.88-.34l.06-.06a2 2 0 012.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.2.35.4.68.6 1l.06.04a2 2 0 010 3.92L20 14c-.2.32-.4.65-.6 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <button class="nb" data-page="map" onclick="UI.nav('map')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Карта</span>
+      </button>
+    </nav>
+
+    <div class="sb-bottom">
+      <button class="nb" data-page="profile" onclick="UI.nav('profile')">
+        <div class="sb-avatar" id="sb-avatar">АА</div>
+        <div class="sb-user">
+          <div class="sb-uname" id="sb-uname">Загрузка...</div>
+          <div class="sb-ugroup" id="sb-ugroup">—</div>
+        </div>
+      </button>
+      <button class="sb-logout" onclick="Auth.logout()" title="Выйти">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+    <button class="mobile-menu-btn" onclick="UI.toggleSidebar()" aria-label="Открыть меню">☰</button>
+
+    <!-- CHAT PAGE -->
+    <div class="page active" id="page-chat">
+      <div class="chat-history" id="chat-history">
+        <div class="ch-header">
+          <span>Чаты</span>
+          <button onclick="ChatUI.newChat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="ch-list" id="ch-list"></div>
+      </div>
+
+      <div class="chat-body">
+        <div class="chat-topbar">
+          <button class="tbar-btn" onclick="ChatUI.toggleHistory()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="tbar-info">
+            <div class="tbar-title" id="chat-title">Pocket Moodle</div>
+            <div class="tbar-status"><span class="dot-pulse"></span>AI на связи</div>
+          </div>
+        </div>
+
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="chat-empty" id="chat-empty">
+            <div class="ce-icon">⬡</div>
+            <h3>Привет! Я Pocket Moodle</h3>
+            <p>Помогу с вопросами об Astana IT University — поступление, программы, стоимость, расписание и всё остальное.</p>
+            <div class="ce-chips">
+              <button onclick="ChatUI.chip(this)">📋 Как поступить в AITU?</button>
+              <button onclick="ChatUI.chip(this)">💰 Стоимость обучения</button>
+              <button onclick="ChatUI.chip(this)">🎓 Образовательные программы</button>
+              <button onclick="ChatUI.chip(this)">📅 Даты зачисления</button>
+              <button onclick="ChatUI.chip(this)">🏠 Есть ли общежитие?</button>
+              <button onclick="ChatUI.chip(this)">🌍 Обучение на каком языке?</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-wrap">
+          <div class="chat-input-box" id="chat-input-box">
+            <textarea id="chat-input"
+              placeholder="Задайте вопрос об AITU или любую другую тему..."
+              rows="1"
+              onkeydown="ChatUI.keydown(event)"
+              oninput="ChatUI.resize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="ChatUI.send()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div class="input-hint">Pocket Moodle может ошибаться. Важные учебные данные сверяйте с Moodle.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page" id="page-dashboard">
+      <div class="page-hdr">
+        <h1>Дедлайны</h1>
+        <p>Горящие и ближайшие события из Moodle Calendar</p>
+      </div>
+      <div class="dash-body" id="dash-body"></div>
+    </div>
+
+    <!-- SCHEDULE PAGE -->
+    <div class="page" id="page-schedule">
+      <div class="page-hdr">
+        <h1>Расписание</h1>
+        <p>Пары группы из DU</p>
+      </div>
+      <div class="dash-body" id="schedule-body"></div>
+    </div>
+
+    <!-- ATTENDANCE PAGE -->
+    <div class="page" id="page-attendance">
+      <div class="page-hdr">
+        <h1>Attendance</h1>
+        <p>Быстрый расчет посещаемости и допустимых пропусков</p>
+      </div>
+      <div class="dash-body" id="attendance-body"></div>
+    </div>
+
+    <!-- TEACHERS PAGE -->
+    <div class="page" id="page-teachers">
+      <div class="page-hdr">
+        <h1>Поиск преподавателей</h1>
+        <p>Автоматическая загрузка из публичного DU</p>
+      </div>
+      <div class="dash-body" id="teachers-body"></div>
+    </div>
+
+    <!-- SYLLABUS PAGE -->
+    <div class="page" id="page-syllabus">
+      <div class="page-hdr">
+        <h1>Силлабусы</h1>
+        <p>Список и детали силлабусов из DU</p>
+      </div>
+      <div class="dash-body" id="syllabus-body"></div>
+    </div>
+
+    <!-- MAP PAGE -->
+    <div class="page" id="page-map">
+      <div class="page-hdr">
+        <h1>Карта кампуса</h1>
+        <p>EXPO, блок С1, Астана</p>
+      </div>
+      <div class="map-wrap" id="map-wrap"></div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-profile">
+      <div class="page-hdr">
+        <h1>Настройки</h1>
+        <p>Профиль, уведомления и индивидуальный Moodle Calendar URL</p>
+      </div>
+      <div class="profile-body" id="profile-body"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/map.js"></script>
+<script src="js/pages.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+/* ============================================
+//  map.css - Стили для интерактивной карты
+// ============================================ */
+
+#page-map {
+  padding: 0;
+  background: var(--bg1);
+}
+
+.map-wrap {
+  width: 100%;
+  height: calc(100vh - 120px);
+  position: relative;
+  overflow: hidden;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.map-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+  border-radius: 0;
+}
+
+/* Оверлей с информацией */
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.map-info {
+  background: var(--bg2);
+  border-radius: var(--r-md);
+  padding: 32px;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--b1);
+  position: relative;
+}
+
+.map-info h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--t1);
+}
+
+.map-info p {
+  color: var(--t2);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.map-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg1);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--b1);
+  transition: all var(--t-fast);
+}
+
+.feature-item:hover {
+  background: var(--bg3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.feature-item span:last-child {
+  font-size: 13px;
+  color: var(--t2);
+  font-weight: 500;
+}
+
+.map-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--b1);
+  color: var(--t2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t-fast);
+}
+
+.map-close:hover {
+  background: var(--abg);
+  color: var(--a);
+  transform: scale(1.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .map-wrap {
+    height: calc(100vh - 100px);
+  }
+  
+  .map-info {
+    margin: 20px;
+    padding: 24px;
+    max-width: none;
+  }
+  
+  .map-features {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .feature-item {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-info {
+    margin: 10px;
+    padding: 20px;
+  }
+  
+  .map-info h3 {
+    font-size: 20px;
+  }
+  
+  .map-info p {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+}

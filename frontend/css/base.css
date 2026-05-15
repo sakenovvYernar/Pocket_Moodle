@@ -1,0 +1,100 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg0);
+  color: var(--t1);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Syne', sans-serif;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; color: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; color: var(--t1); border: none; outline: none; background: none; resize: none; }
+a { color: var(--a); text-decoration: none; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--b3); }
+
+.hidden { display: none !important; }
+
+/* page wrapper */
+.page { display: none; height: 100%; overflow: hidden; }
+.page.active { display: flex; }
+
+.page-hdr {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+.page-hdr h1 { font-size: 24px; margin-bottom: 3px; }
+.page-hdr p  { color: var(--t2); font-size: 13px; }
+
+/* Tags */
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.tag-blue   { background: rgba(96,165,250,.12);   color: var(--blue); }
+.tag-green  { background: rgba(52,211,153,.12);   color: var(--green); }
+.tag-yellow { background: rgba(251,191,36,.12);   color: var(--yellow); }
+.tag-red    { background: rgba(248,113,113,.12);  color: var(--red); }
+.tag-cyan   { background: var(--abg);             color: var(--a); }
+
+/* Utility */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.gap-2 { gap: 8px; }
+.mt-auto { margin-top: auto; }
+.text-muted { color: var(--t2); }
+
+/* Field */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 500; color: var(--t2); }
+.field input, .field select, .field textarea {
+  padding: 10px 13px;
+  background: var(--bg3);
+  border: 1px solid var(--b1);
+  border-radius: var(--r-sm);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.field input::placeholder { color: var(--t3); }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--a2);
+  box-shadow: 0 0 0 3px var(--aglo);
+}
+
+/* Spinner */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--b2);
+  border-top-color: var(--a);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes slideIn { from { opacity:0; transform:translateY(24px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes bounce {
+  0%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+.anim-up  { animation: fadeUp  0.3s var(--ease) both; }
+.anim-in  { animation: slideIn 0.45s cubic-bezier(.34,1.56,.64,1) both; }

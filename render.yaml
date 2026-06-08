@@ -11,9 +11,33 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
       - key: JWT_SECRET
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_MAX_OUTPUT_TOKENS
+        value: 700
+      - key: GEMINI_TEMPERATURE
+        value: 0.5
+      - key: AI_WEB_SEARCH_TIMEOUT_MS
+        value: 4500
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_TIMEZONE
+        value: Asia/Almaty
+      - key: NOTIFICATIONS_ENABLED
+        value: true
+      - key: NOTIFICATIONS_CRON
+        value: "*/10 * * * *"
+      - key: DU_TOKEN
+        sync: false
+      - key: DU_SYNC_SECRET
+        sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
         sync: false

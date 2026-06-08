@@ -8,24 +8,24 @@ const TYPE_KEYWORDS = [
   { type: 'lecture', words: ['lecture', 'class', 'lesson', 'lab', 'practice', 'занятие', 'лекция', 'пара', 'практика'] }
 ];
 
-function classifyEvent(event) {
-  const haystack = [
-    event.summary,
-    event.description,
-    event.location,
-    event.categories && Array.isArray(event.categories) ? event.categories.join(' ') : ''
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  const match = TYPE_KEYWORDS.find(({ words }) => words.some((word) => haystack.includes(word)));
-  return match ? match.type : 'lecture';
-}
-
 function cleanText(value) {
   return String(value || '')
     .replace(/\\n/g, '\n')
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function classifyEvent(event) {
+  const haystack = [
+    event.summary,
+    event.description,
+    event.location,
+    Array.isArray(event.categories) ? event.categories.join(' ') : ''
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const match = TYPE_KEYWORDS.find(({ words }) => words.some((word) => haystack.includes(word)));
+  return match ? match.type : 'lecture';
 }
 
 function pickDetail(text, labels) {

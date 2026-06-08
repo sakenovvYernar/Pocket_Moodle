@@ -1,6 +1,7 @@
 node_modules/
 .env
 *.log
+data/syllabuses/
 
 # Firebase service account keys
 backend/*firebase-adminsdk*.json

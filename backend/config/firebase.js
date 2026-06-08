@@ -22,14 +22,18 @@ function readServiceAccount() {
 
 if (!admin.apps.length) {
   const serviceAccount = readServiceAccount();
+  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET ||
+    serviceAccount?.storage_bucket ||
+    (serviceAccount?.project_id ? `${serviceAccount.project_id}.firebasestorage.app` : undefined);
 
   admin.initializeApp(serviceAccount
-    ? { credential: admin.credential.cert(serviceAccount) }
-    : { credential: admin.credential.applicationDefault() }
+    ? { credential: admin.credential.cert(serviceAccount), storageBucket }
+    : { credential: admin.credential.applicationDefault(), storageBucket }
   );
 }
 
 const db = admin.firestore();
 db.settings({ ignoreUndefinedProperties: true });
+const bucket = admin.storage().bucket();
 
-module.exports = { admin, db };
+module.exports = { admin, db, bucket };

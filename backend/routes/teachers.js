@@ -1,150 +1,125 @@
 const express = require('express');
 const router = express.Router();
+const duCache = require('../services/duCacheService');
 
-const DU_API_BASE_URL = process.env.DU_API_BASE_URL || 'https://du.astanait.edu.kz:8765';
-const CACHE_TTL_MS = 10 * 60 * 1000;
-let teachersCache = null;
+function normalizeTeacher(item = {}) {
+  const fullName = [
+    item.surnameRu || item.surnameEn || item.surnameKz || item.surname,
+    item.nameRu || item.nameEn || item.nameKz || item.name,
+    item.patronymicRu || item.patronymicEn || item.patronymicKz || item.patronymic
+  ].filter(Boolean).join(' ');
 
-function buildUrl(path, query = {}) {
-  const url = new URL(path, DU_API_BASE_URL);
-  Object.entries(query).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      url.searchParams.set(key, value);
+  return {
+    ...item,
+    id: item.id || item.teacher_id,
+    userId: item.userId || item.user_id,
+    fullName: item.fullName || fullName,
+    email: item.email || item.mail || item.corporateEmail || ''
+  };
+}
+
+function pickEmail(...values) {
+  for (const value of values) {
+    if (!value || typeof value !== 'object') continue;
+    const direct = [
+      value.email,
+      value.username,
+      value.mail,
+      value.corporateEmail,
+      value.emailAddress,
+      value.login
+    ].find(Boolean);
+    if (direct && String(direct).includes('@')) {
+      return String(direct).trim().toLowerCase();
     }
-  });
-  return url;
-}
-
-async function fetchJson(url, { duToken = '' } = {}) {
-  const headers = {
-    Accept: 'application/json, text/plain, */*',
-    Origin: 'https://du.astanait.edu.kz',
-    Referer: 'https://du.astanait.edu.kz/'
-  };
-  if (duToken) headers.Authorization = `Bearer ${duToken}`;
-
-  const response = await fetch(url, {
-    headers
-  });
-
-  const text = await response.text();
-  if (!response.ok) {
-    const err = new Error(text || `DU API HTTP ${response.status}`);
-    err.status = response.status;
-    throw err;
   }
-
-  return text ? JSON.parse(text) : null;
+  return '';
 }
 
-function getDuToken(req) {
-  const raw = req.headers['x-du-token'] || '';
-  return String(raw).replace(/^Bearer\s+/i, '').trim();
-}
+function mergeCachedTeacherDocs(...docs) {
+  const validDocs = docs.filter(Boolean);
+  if (!validDocs.length) return null;
 
-function publicQuery(query = {}) {
-  const next = { ...query };
-  delete next.all;
-  return next;
-}
-
-async function fetchAllTeachers(query = {}) {
-  if (teachersCache && Date.now() - teachersCache.createdAt < CACHE_TTL_MS) {
-    return teachersCache.data;
-  }
-
-  const cleanQuery = publicQuery(query);
-  const firstUrl = buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-all-teachers', {
-    ...cleanQuery,
-    page: cleanQuery.page || 0
-  });
-  const firstPage = await fetchJson(firstUrl);
-  const pageCount = Number(firstPage?.number_of_pages || 1);
-  const list = Array.isArray(firstPage?.list) ? [...firstPage.list] : [];
-
-  for (let page = 1; page < pageCount; page += 8) {
-    const chunk = Array.from({ length: Math.min(8, pageCount - page) }, (_, index) => page + index);
-    const pages = await Promise.all(chunk.map((pageNumber) => {
-      const url = buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-all-teachers', {
-        ...cleanQuery,
-        page: pageNumber
-      });
-      return fetchJson(url);
-    }));
-
-    pages.forEach((pageData) => {
-      if (Array.isArray(pageData?.list)) list.push(...pageData.list);
-    });
-  }
-
-  const data = {
-    ...firstPage,
-    list,
-    current_page: 0,
-    loaded_pages: pageCount,
-    total_number: firstPage?.total_number || list.length
-  };
-  teachersCache = { createdAt: Date.now(), data };
-  return data;
+  return validDocs.reduce((acc, doc) => ({
+    ...acc,
+    ...doc,
+    teacher: acc.teacher || doc.teacher || null,
+    publicInfo: acc.publicInfo || doc.publicInfo || null,
+    userInfo: acc.userInfo || doc.userInfo || null,
+    email: acc.email || doc.email || ''
+  }), {});
 }
 
 router.get('/', async (req, res) => {
   try {
-    const data = req.query.all === '1'
-      ? await fetchAllTeachers(req.query)
-      : await fetchJson(buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-all-teachers', publicQuery(req.query)));
-    res.json({ teachers: data });
-  } catch (err) {
-    console.error('DU teachers error:', err);
-    res.status(err.status || 502).json({ error: 'Не удалось получить список преподавателей DU' });
-  }
-});
+    const cached = await duCache.getCachedTeachers();
+    if (!cached) {
+      return res.status(404).json({ error: 'Список преподавателей ещё не загружен в базу.' });
+    }
 
-router.get('/user/:userId', async (req, res) => {
-  try {
-    const url = buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-teacher-by-user-id', {
-      user_id: req.params.userId
+    const list = Array.isArray(cached.teachers?.list)
+      ? cached.teachers.list.map(normalizeTeacher)
+      : [];
+    res.json({
+      teachers: {
+        ...cached.teachers,
+        list
+      },
+      updated_at: cached.updated_at,
+      cached: true
     });
-    const data = await fetchJson(url, { duToken: getDuToken(req) });
-    res.json({ teacher: data });
   } catch (err) {
-    console.error('DU teacher public user error:', err);
-    res.status(err.status || 502).json({ error: 'Не удалось получить публичные данные преподавателя DU' });
+    console.error('Cached teachers error:', err);
+    res.status(500).json({ error: 'Не удалось прочитать преподавателей из базы.' });
   }
 });
 
 router.get('/schedule/by-email/:email', async (req, res) => {
   try {
-    const url = buildUrl(`/astanait-schedule-module/api/v1/schedule/tutorEmail/${encodeURIComponent(req.params.email)}`);
-    const data = await fetchJson(url, { duToken: getDuToken(req) });
-    res.json({ schedule: data });
+    const cached = await duCache.getCachedTeacherSchedule(req.params.email);
+    if (!cached) return res.status(404).json({ error: 'Расписание преподавателя ещё не загружено в базу.' });
+    res.json({ schedule: cached.schedule, updated_at: cached.updated_at, cached: true });
   } catch (err) {
-    console.error('DU teacher schedule error:', err);
-    res.status(err.status || 502).json({
-      error: err.status === 401 || err.status === 403
-        ? 'DU не отдал расписание без авторизации'
-        : 'Не удалось получить расписание преподавателя DU'
-    });
+    console.error('Cached teacher schedule error:', err);
+    res.status(500).json({ error: 'Не удалось прочитать расписание преподавателя из базы.' });
+  }
+});
+
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const cached = await duCache.getCachedTeacherDetail(req.params.userId);
+    if (!cached) return res.status(404).json({ error: 'Данные преподавателя ещё не загружены в базу.' });
+    res.json({ teacher: cached.teacher, updated_at: cached.updated_at, cached: true });
+  } catch (err) {
+    console.error('Cached teacher user error:', err);
+    res.status(500).json({ error: 'Не удалось прочитать данные преподавателя из базы.' });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const url = buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-teacher-info', {
-      teacher_id: req.params.id
+    const cachedById = await duCache.getCachedTeacherDetail(req.params.id);
+    const cachedByUserId = req.query.userId
+      ? await duCache.getCachedTeacherDetail(req.query.userId)
+      : null;
+    const cached = mergeCachedTeacherDocs(cachedById, cachedByUserId);
+    if (!cached) return res.status(404).json({ error: 'Детали преподавателя ещё не загружены в базу.' });
+    const email = pickEmail(cached, cached.userInfo, cached.publicInfo, cached.teacher);
+    const schedule = email ? await duCache.getCachedTeacherSchedule(email) : null;
+
+    res.json({
+      teacher: cached.teacher,
+      publicInfo: cached.publicInfo || null,
+      userInfo: cached.userInfo || null,
+      email,
+      schedule: schedule?.schedule || [],
+      schedule_updated_at: schedule?.updated_at || null,
+      updated_at: cached.updated_at,
+      cached: true
     });
-    const [data, publicInfo] = await Promise.all([
-      fetchJson(url, { duToken: getDuToken(req) }),
-      req.query.userId
-        ? fetchJson(buildUrl('/astanait-teacher-module/api/v1/teacher/pps/get-teacher-by-user-id', {
-          user_id: req.query.userId
-        }), { duToken: getDuToken(req) }).catch(() => null)
-        : Promise.resolve(null)
-    ]);
-    res.json({ teacher: data, publicInfo });
   } catch (err) {
-    console.error('DU teacher detail error:', err);
-    res.status(err.status || 502).json({ error: 'Не удалось получить данные преподавателя DU' });
+    console.error('Cached teacher detail error:', err);
+    res.status(500).json({ error: 'Не удалось прочитать детали преподавателя из базы.' });
   }
 });
 

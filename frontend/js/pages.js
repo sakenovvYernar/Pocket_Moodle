@@ -73,6 +73,91 @@ const PageHelpers = (() => {
   return { escHtml, fmtDate, fmtTimeRange, currentMonthParams, typeLabel, eventRow, scheduleRow, emptyCalendar };
 })();
 
+const PageText = (() => {
+  const dict = {
+    ru: {
+      'syllabus.title': 'Силлабусы',
+      'syllabus.source': 'PDF-файлы из нашей базы и данные DU cache.',
+      'syllabus.search': 'Поиск',
+      'syllabus.placeholder': 'Дисциплина, код, школа, преподаватель',
+      'syllabus.refresh': 'Обновить из DU',
+      'syllabus.loading': 'Загружаю силлабусы...',
+      'syllabus.empty': 'Силлабусы не найдены.',
+      'syllabus.noDetails': 'Детали не указаны',
+      'syllabus.noCode': 'Код не указан',
+      'syllabus.open': 'Открыть PDF',
+      'attendance.title': 'Attendance Calculator',
+      'attendance.totalPairs': 'Всего пар',
+      'attendance.totalPoints': 'Всего поинтов',
+      'attendance.visitedPairs': 'Посещено пар',
+      'attendance.earnedPoints': 'Получено поинтов',
+      'attendance.required': 'Минимальный процент',
+      'attendance.fill': 'Заполни поля, чтобы посчитать текущую посещаемость.',
+      'attendance.summaryOk': 'Все нормально. Можно потерять еще {points} поинт(ов) или {pairs} пар(ы).',
+      'attendance.summaryBad': 'Нужно восстановить минимум {points} поинт(ов), это примерно {pairs} пар(ы).',
+      'attendance.pointsLine': 'Получено {earned} из {total} поинтов. Посещено {visited} из {pairs} пар.',
+      'attendance.absentLine': 'Потеряно поинтов: {lost}. Каждая пара = 2 поинта.'
+    },
+    kk: {
+      'syllabus.title': 'Силлабустар',
+      'syllabus.source': 'Біздің базадағы PDF файлдар және DU cache деректері.',
+      'syllabus.search': 'Іздеу',
+      'syllabus.placeholder': 'Пән, код, мектеп, оқытушы',
+      'syllabus.refresh': 'DU-дан жаңарту',
+      'syllabus.loading': 'Силлабустар жүктелуде...',
+      'syllabus.empty': 'Силлабустар табылмады.',
+      'syllabus.noDetails': 'Толық ақпарат көрсетілмеген',
+      'syllabus.noCode': 'Код көрсетілмеген',
+      'syllabus.open': 'PDF ашу',
+      'attendance.title': 'Қатысу калькуляторы',
+      'attendance.totalPairs': 'Барлық сабақ жұптары',
+      'attendance.totalPoints': 'Барлық поинттер',
+      'attendance.visitedPairs': 'Қатысқан жұптар',
+      'attendance.earnedPoints': 'Алынған поинттер',
+      'attendance.required': 'Минималды пайыз',
+      'attendance.fill': 'Қатысуды есептеу үшін өрістерді толтыр.',
+      'attendance.summaryOk': 'Жағдай жақсы. Тағы {points} поинт немесе {pairs} жұп жоғалтуға болады.',
+      'attendance.summaryBad': 'Кемінде {points} поинт қалпына келтіру керек, бұл шамамен {pairs} жұп.',
+      'attendance.pointsLine': '{earned}/{total} поинт алынды. {visited}/{pairs} жұпқа қатысқан.',
+      'attendance.absentLine': 'Жоғалған поинттер: {lost}. Әр жұп = 2 поинт.'
+    },
+    en: {
+      'syllabus.title': 'Syllabi',
+      'syllabus.source': 'PDF files from our database and DU cache data.',
+      'syllabus.search': 'Search',
+      'syllabus.placeholder': 'Discipline, code, school, teacher',
+      'syllabus.refresh': 'Refresh from DU',
+      'syllabus.loading': 'Loading syllabi...',
+      'syllabus.empty': 'No syllabi found.',
+      'syllabus.noDetails': 'No details provided',
+      'syllabus.noCode': 'No code provided',
+      'syllabus.open': 'Open PDF',
+      'attendance.title': 'Attendance Calculator',
+      'attendance.totalPairs': 'Total classes',
+      'attendance.totalPoints': 'Total points',
+      'attendance.visitedPairs': 'Visited classes',
+      'attendance.earnedPoints': 'Earned points',
+      'attendance.required': 'Required percent',
+      'attendance.fill': 'Fill in the fields to calculate attendance.',
+      'attendance.summaryOk': 'You are fine. You may lose {points} more point(s), about {pairs} class(es).',
+      'attendance.summaryBad': 'You need to recover at least {points} point(s), about {pairs} class(es).',
+      'attendance.pointsLine': 'Earned {earned} of {total} points. Visited {visited} of {pairs} classes.',
+      'attendance.absentLine': 'Lost points: {lost}. Each class = 2 points.'
+    }
+  };
+
+  function t(key, params = {}) {
+    const lang = AppPrefs?.getLanguage?.() || 'ru';
+    let text = dict[lang]?.[key] || dict.ru[key] || key;
+    Object.entries(params).forEach(([name, value]) => {
+      text = text.replaceAll(`{${name}}`, String(value));
+    });
+    return text;
+  }
+
+  return { t };
+})();
+
 const DashUI = (() => {
   async function init() {
     const body = document.getElementById('dash-body');
@@ -129,8 +214,7 @@ const ScheduleUI = (() => {
   let selectedDay = 'all';
   let scheduleItems = [];
   let scheduleError = '';
-  let scheduleSource = '';
-  let scheduleAttempts = [];
+  let scheduleSource = 'DU';
   const weekdays = [
     { id: 'all', label: 'Все' },
     { id: '1', label: 'Пн' },
@@ -145,22 +229,15 @@ const ScheduleUI = (() => {
   async function init() {
     const body = document.getElementById('schedule-body');
     let group = Auth.getUser()?.group || '';
-    body.innerHTML = renderShell(group, '<p class="muted-line">Загружаю расписание из DU...</p>');
+    body.innerHTML = renderShell(group, '<p class="muted-line">Загружаю расписание из нашей базы...</p>');
 
     try {
       const { user } = await API.me();
       Auth.setUser(user);
       group = user.group || '';
-      body.innerHTML = renderShell(group, '<p class="muted-line">Загружаю расписание из DU...</p>');
+      body.innerHTML = renderShell(group, '<p class="muted-line">Загружаю расписание из нашей базы...</p>');
     } catch {
       // Если профиль не обновился, продолжаем с локальным пользователем.
-    }
-
-    if (!group) {
-      scheduleItems = [];
-      scheduleError = 'В профиле не указана группа.';
-      render();
-      return;
     }
 
     await loadDuSchedule(false);
@@ -171,7 +248,7 @@ const ScheduleUI = (() => {
       <div class="dash-card full deadline-hero">
         <div>
           <div class="dash-card-title">Расписание группы</div>
-          <p>Источник: DU schedule/groupName/${PageHelpers.escHtml(group || 'GROUP')}</p>
+          <p>Источник: наша база DU cache (${PageHelpers.escHtml(group || 'GROUP')})</p>
         </div>
         <div class="deadline-count">${scheduleItems.length}</div>
       </div>
@@ -181,7 +258,7 @@ const ScheduleUI = (() => {
             <input value="${PageHelpers.escHtml(group || 'Не указана')}" disabled />
           </label>
           <label class="calc-field">Действие
-            <button class="btn-save" onclick="ScheduleUI.loadDuSchedule(true)">Загрузить из DU</button>
+            <button class="btn-save" onclick="ScheduleUI.loadDuSchedule(true)">Обновить из базы</button>
           </label>
         </div>
       </div>
@@ -189,51 +266,56 @@ const ScheduleUI = (() => {
   }
 
   async function loadDuSchedule(fromButton = false) {
-    const group = (Auth.getUser()?.group || '').trim();
+    const user = Auth.getUser() || {};
     const body = document.getElementById('schedule-body');
 
-    if (!group) {
-      scheduleError = 'Укажи группу в профиле, чтобы загрузить расписание.';
+    if (!user.group) {
       scheduleItems = [];
+      scheduleError = 'Укажи группу в профиле, чтобы загрузить расписание.';
+      body.innerHTML = renderShell(user.group || '', '');
       render();
       return;
     }
 
     if (fromButton) {
-      document.getElementById('schedule-content').innerHTML = '<div class="dash-card full"><p class="muted-line">Загружаю расписание из DU...</p></div>';
+      const content = document.getElementById('schedule-content');
+      if (content) content.innerHTML = '<div class="dash-card full"><p class="muted-line">Загружаю расписание из нашей базы...</p></div>';
     }
 
     try {
-      const { schedule, group: loadedGroup, source, attempts = [] } = await API.getDuMySchedule();
-      scheduleItems = normalizeSchedule(schedule);
-      scheduleSource = source?.url || '';
-      scheduleAttempts = attempts;
-      scheduleError = scheduleItems.length ? '' : emptyScheduleMessage();
-      body.innerHTML = renderShell(loadedGroup || group, '');
+      const { schedule, group, source, updated_at } = await API.getDuMySchedule();
+      scheduleItems = normalizeDuSchedule(schedule);
+      scheduleSource = `Наша база, обновлено ${updatedAtText(updated_at || source?.updated_at)}`;
+      scheduleError = scheduleItems.length ? '' : 'В нашей базе для этой группы расписание пустое.';
+      body.innerHTML = renderShell(group || user.group || '', '');
       render();
     } catch (err) {
       scheduleItems = [];
-      scheduleSource = '';
-      scheduleAttempts = err.attempts || [];
-      scheduleError = err.message;
-      body.innerHTML = renderShell(group, '');
+      scheduleSource = 'Наша база';
+      scheduleError = err.message || 'Не удалось загрузить расписание из нашей базы.';
+      body.innerHTML = renderShell(user.group || '', '');
       render();
     }
+  }
+
+  function updatedAtText(value) {
+    if (!value) return 'неизвестно';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('ru');
   }
 
   function render() {
     const content = document.getElementById('schedule-content');
     if (!content) return;
 
-    const events = scheduleItems;
     const filtered = selectedDay === 'all'
-      ? events
-      : events.filter((event) => String(event.weekday) === selectedDay);
+      ? scheduleItems
+      : scheduleItems.filter((event) => String(event.weekday) === selectedDay);
     const grouped = weekdays
       .filter((day) => day.id !== 'all')
       .map((day) => ({
         ...day,
-        events: events.filter((event) => String(event.weekday) === day.id)
+        events: scheduleItems.filter((event) => String(event.weekday) === day.id)
       }))
       .filter((day) => selectedDay === 'all' || day.id === selectedDay);
 
@@ -246,25 +328,10 @@ const ScheduleUI = (() => {
           <div class="dash-card-title">Недельное расписание</div>
           <span class="tag tag-blue">${filtered.length}</span>
         </div>
-        ${scheduleSource ? `<p class="muted-line">Источник: ${PageHelpers.escHtml(shortUrl(scheduleSource))}</p>` : ''}
+        ${scheduleSource ? `<p class="muted-line">Источник: ${PageHelpers.escHtml(scheduleSource)}</p>` : ''}
         ${scheduleError ? `<p class="muted-line">${PageHelpers.escHtml(scheduleError)}</p>` : grouped.length ? grouped.map(dayHtml).join('') : '<p class="muted-line">На выбранный день пар нет.</p>'}
       </div>`;
-  }
 
-  function emptyScheduleMessage() {
-    const tried = scheduleAttempts.length ? ` Проверено вариантов: ${scheduleAttempts.length}.` : '';
-    const last = scheduleAttempts.slice(-1)[0];
-    const tail = last?.status && last.status !== 200 ? ` Последний статус DU: ${last.status}.` : '';
-    return `DU ответил, но пары для группы из профиля не нашлись.${tried}${tail}`;
-  }
-
-  function shortUrl(url) {
-    try {
-      const parsed = new URL(url);
-      return parsed.pathname + parsed.search;
-    } catch {
-      return url;
-    }
   }
 
   function dayHtml(day) {
@@ -279,26 +346,42 @@ const ScheduleUI = (() => {
     render();
   }
 
-  function normalizeSchedule(payload) {
-    const list = collectScheduleItems(payload);
+  function normalizeDuSchedule(payload) {
+    return collectScheduleItems(payload)
+      .map((item) => {
+        const slot = slotInfo(item);
+        return {
+          raw: item,
+          weekday: normalizeWeekday(field(item, ['dayOfWeek', 'weekDay', 'day', 'weekday', 'date', 'lessonDate', 'studyDate', 'classtime_day']) || slot.day),
+          title: field(item, ['disciplineName', 'discipline', 'subject', 'subjectName', 'courseName', 'courseUnitName', 'lessonName', 'title', 'name', 'moduleName', 'className']) || 'Пара',
+          type: field(item, ['type', 'lessonType', 'lesson_type', 'classType', 'lessonFormat', 'lessonKind']) || '',
+          start: field(item, ['startTime', 'start', 'begin', 'beginTime', 'timeStart', 'startLessonTime', 'lessonStartTime', 'from']) || slot.start,
+          end: field(item, ['endTime', 'end', 'finish', 'finishTime', 'timeEnd', 'endLessonTime', 'lessonEndTime', 'to']) || slot.finish,
+          room: field(item, ['room', 'classroom', 'cabinet', 'auditorium', 'auditory', 'auditoryName', 'location', 'classRoom']) || '',
+          teacher: field(item, ['teacher', 'teacherName', 'teacherFullName', 'tutor', 'tutorName', 'lecturer', 'lecturerName', 'instructor']) || '',
+          group: field(item, ['groupName', 'group', 'groups', 'studentGroup', 'studentGroupName']) || ''
+        };
+      })
+      .filter((item) => item.title || item.start || item.room)
+      .sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  }
 
-    return list.map((item) => {
-      const weekday = normalizeWeekday(
-        item.__weekday ||
-        field(item, ['dayOfWeek', 'weekDay', 'day', 'week_day', 'weekday', 'date', 'lessonDate', 'studyDate'])
-      );
-      return {
-        raw: item,
-        weekday,
-        title: field(item, ['disciplineName', 'discipline', 'subject', 'subjectName', 'courseName', 'courseUnitName', 'lessonName', 'title', 'name', 'moduleName', 'className']) || 'Пара',
-        type: field(item, ['type', 'lessonType', 'lesson_type', 'classType', 'lessonFormat', 'lessonKind']) || '',
-        start: field(item, ['startTime', 'start_time', 'start', 'begin', 'beginTime', 'timeStart', 'startLessonTime', 'lessonStartTime', 'from']) || '',
-        end: field(item, ['endTime', 'end_time', 'end', 'finish', 'finishTime', 'timeEnd', 'endLessonTime', 'lessonEndTime', 'to']) || '',
-        room: field(item, ['room', 'classroom', 'cabinet', 'auditorium', 'auditory', 'auditoryName', 'location', 'classRoom']) || '',
-        teacher: field(item, ['teacher', 'teacherName', 'teacherFullName', 'tutor', 'tutorName', 'lecturer', 'lecturerName', 'instructor']) || '',
-        group: field(item, ['groupName', 'group', 'groups', 'studentGroup', 'studentGroupName']) || ''
-      };
-    }).filter((item) => item.title || item.start || item.room);
+  function slotInfo(item) {
+    const dayCode = field(item, ['classtime_day']);
+    const timeCode = field(item, ['classtime_time']);
+    let parsed = null;
+    try {
+      parsed = typeof item.days === 'string' ? JSON.parse(item.days) : item.days;
+    } catch {
+      parsed = null;
+    }
+
+    const time = (parsed?.time || []).find((slot) => String(slot.id) === String(timeCode));
+    return {
+      day: dayCode,
+      start: time?.start || '',
+      finish: time?.finish || ''
+    };
   }
 
   function collectScheduleItems(value, inherited = {}, acc = []) {
@@ -309,8 +392,8 @@ const ScheduleUI = (() => {
 
     if (!value || typeof value !== 'object') return acc;
 
-    const inheritedWeekday = field(value, ['dayOfWeek', 'weekDay', 'day', 'week_day', 'weekday', 'date', 'lessonDate', 'studyDate']);
-    const nextInherited = inheritedWeekday ? { ...inherited, __weekday: inheritedWeekday } : inherited;
+    const inheritedWeekday = field(value, ['dayOfWeek', 'weekDay', 'day', 'weekday', 'date', 'lessonDate', 'studyDate']);
+    const nextInherited = inheritedWeekday ? { ...inherited, dayOfWeek: inheritedWeekday } : inherited;
 
     if (looksLikeScheduleItem(value)) {
       acc.push({ ...nextInherited, ...value });
@@ -324,8 +407,8 @@ const ScheduleUI = (() => {
   function looksLikeScheduleItem(item) {
     return Boolean(
       field(item, ['disciplineName', 'discipline', 'subject', 'subjectName', 'courseName', 'courseUnitName', 'lessonName', 'title', 'moduleName', 'className']) ||
-      field(item, ['startTime', 'start_time', 'start', 'begin', 'beginTime', 'timeStart', 'startLessonTime', 'lessonStartTime', 'from']) ||
-      field(item, ['room', 'classroom', 'cabinet', 'auditorium', 'auditory', 'auditoryName', 'location', 'classRoom']) ||
+      field(item, ['startTime', 'start', 'begin', 'beginTime', 'timeStart', 'startLessonTime', 'lessonStartTime', 'from', 'classtime_time']) ||
+      field(item, ['room', 'classroom', 'cabinet', 'auditorium', 'auditoryName', 'location', 'classRoom']) ||
       field(item, ['teacherName', 'teacherFullName', 'tutorName', 'lecturer', 'lecturerName', 'instructor'])
     );
   }
@@ -342,7 +425,7 @@ const ScheduleUI = (() => {
     if (Array.isArray(value)) return value.map(valueToText).filter(Boolean).join(', ');
     if (value && typeof value === 'object') {
       const fullName = [value.lastName || value.surname, value.firstName, value.middleName].filter(Boolean).join(' ');
-      return value.titleRu || value.titleEn || value.titleKz || value.name || value.fullName || fullName || value.value || value.label || '';
+      return value.titleRu || value.titleEn || value.titleKz || value.nameRu || value.nameEn || value.nameKz || value.name || value.title || value.fullName || fullName || value.value || value.label || '';
     }
     return String(value);
   }
@@ -350,6 +433,7 @@ const ScheduleUI = (() => {
   function normalizeWeekday(value) {
     if (value === undefined || value === null || value === '') return '1';
     const text = String(value).toLowerCase();
+    if (/^d[1-6]$/.test(text)) return text.slice(1);
     if (/^\d+$/.test(text)) return String(Number(text) % 7);
     if (text.includes('mon') || text.includes('пон') || text.includes('пн')) return '1';
     if (text.includes('tue') || text.includes('вто') || text.includes('вт')) return '2';
@@ -377,8 +461,9 @@ const ScheduleUI = (() => {
 
   return { init, pickDay, loadDuSchedule };
 })();
-
 const AttendanceUI = (() => {
+  const POINTS_PER_PAIR = 2;
+
   function init() {
     render();
   }
@@ -387,44 +472,85 @@ const AttendanceUI = (() => {
     const body = document.getElementById('attendance-body');
     body.innerHTML = `
       <div class="dash-card full">
-        <div class="dash-card-hdr"><div class="dash-card-title">Attendance Calculator</div></div>
+        <div class="dash-card-hdr"><div class="dash-card-title">${PageText.t('attendance.title')}</div></div>
         <div class="attendance-grid">
-          <label class="calc-field">Всего занятий
-            <input id="att-total" type="number" min="1" placeholder="Например, 30" oninput="AttendanceUI.calculate()" />
+          <label class="calc-field">${PageText.t('attendance.totalPairs')}
+            <input id="att-total-pairs" type="number" min="1" placeholder="30" oninput="AttendanceUI.syncTotalPoints(); AttendanceUI.calculate()" />
           </label>
-          <label class="calc-field">Посещено
-            <input id="att-present" type="number" min="0" placeholder="Например, 24" oninput="AttendanceUI.calculate()" />
+          <label class="calc-field">${PageText.t('attendance.totalPoints')}
+            <input id="att-total-points" type="number" min="1" placeholder="60" oninput="AttendanceUI.calculate()" />
           </label>
-          <label class="calc-field">Минимальный процент
+          <label class="calc-field">${PageText.t('attendance.visitedPairs')}
+            <input id="att-visited-pairs" type="number" min="0" placeholder="24" oninput="AttendanceUI.syncEarnedPoints(); AttendanceUI.calculate()" />
+          </label>
+          <label class="calc-field">${PageText.t('attendance.earnedPoints')}
+            <input id="att-earned-points" type="number" min="0" placeholder="48" oninput="AttendanceUI.calculate()" />
+          </label>
+          <label class="calc-field">${PageText.t('attendance.required')}
             <input id="att-required" type="number" min="1" max="100" value="70" oninput="AttendanceUI.calculate()" />
           </label>
         </div>
         <div class="attendance-result" id="attendance-result">
           <div class="result-num">0%</div>
-          <div class="result-text">Заполни поля, чтобы посчитать текущую посещаемость.</div>
+          <div class="result-text">${PageText.t('attendance.fill')}</div>
         </div>
       </div>`;
   }
 
+  function syncTotalPoints() {
+    const pairs = Number(document.getElementById('att-total-pairs')?.value || 0);
+    const totalPoints = document.getElementById('att-total-points');
+    if (totalPoints && pairs > 0) totalPoints.value = pairs * POINTS_PER_PAIR;
+  }
+
+  function syncEarnedPoints() {
+    const pairs = Number(document.getElementById('att-visited-pairs')?.value || 0);
+    const earnedPoints = document.getElementById('att-earned-points');
+    if (earnedPoints && pairs >= 0) earnedPoints.value = pairs * POINTS_PER_PAIR;
+  }
+
   function calculate() {
-    const total = Number(document.getElementById('att-total')?.value || 0);
-    const present = Number(document.getElementById('att-present')?.value || 0);
+    const totalPairs = Number(document.getElementById('att-total-pairs')?.value || 0);
+    const explicitTotalPoints = Number(document.getElementById('att-total-points')?.value || 0);
+    const visitedPairs = Number(document.getElementById('att-visited-pairs')?.value || 0);
+    const explicitEarnedPoints = Number(document.getElementById('att-earned-points')?.value || 0);
     const required = Number(document.getElementById('att-required')?.value || 70);
     const result = document.getElementById('attendance-result');
-    if (!result || total <= 0) return;
+    if (!result) return;
 
-    const percent = Math.max(0, Math.min(100, Math.round((present / total) * 100)));
-    const maxAbsences = Math.max(0, Math.floor(total * (1 - required / 100)));
-    const currentAbsences = Math.max(0, total - present);
-    const remaining = maxAbsences - currentAbsences;
+    const totalPoints = explicitTotalPoints || totalPairs * POINTS_PER_PAIR;
+    const earnedPoints = explicitEarnedPoints || visitedPairs * POINTS_PER_PAIR;
+    if (totalPoints <= 0) {
+      result.innerHTML = `<div class="result-num">0%</div><div class="result-text">${PageText.t('attendance.fill')}</div>`;
+      return;
+    }
+
+    const clampedEarned = Math.max(0, Math.min(totalPoints, earnedPoints));
+    const percent = Math.max(0, Math.min(100, Math.round((clampedEarned / totalPoints) * 100)));
+    const minimumPoints = Math.ceil(totalPoints * (required / 100));
+    const currentLostPoints = Math.max(0, totalPoints - clampedEarned);
+    const allowedLostPoints = Math.max(0, totalPoints - minimumPoints);
+    const remainingLostPoints = allowedLostPoints - currentLostPoints;
+    const remainingPairs = Math.floor(Math.max(remainingLostPoints, 0) / POINTS_PER_PAIR);
+    const recoverPoints = Math.max(0, minimumPoints - clampedEarned);
+    const recoverPairs = Math.ceil(recoverPoints / POINTS_PER_PAIR);
     const ok = percent >= required;
 
     result.innerHTML = `
       <div class="result-num" style="color:${ok ? 'var(--green)' : 'var(--red)'}">${percent}%</div>
-      <div class="result-text">${ok ? `Можно пропустить еще ${Math.max(remaining, 0)} зан.` : `Нужно восстановить минимум ${Math.abs(remaining)} зан.`}</div>`;
+      <div class="result-text">${ok
+        ? PageText.t('attendance.summaryOk', { points: Math.max(remainingLostPoints, 0), pairs: remainingPairs })
+        : PageText.t('attendance.summaryBad', { points: recoverPoints, pairs: recoverPairs })}</div>
+      <div class="result-text">${PageText.t('attendance.pointsLine', {
+        earned: clampedEarned,
+        total: totalPoints,
+        visited: Math.floor(clampedEarned / POINTS_PER_PAIR),
+        pairs: totalPairs || Math.floor(totalPoints / POINTS_PER_PAIR)
+      })}</div>
+      <div class="result-text">${PageText.t('attendance.absentLine', { lost: currentLostPoints })}</div>`;
   }
 
-  return { init, calculate };
+  return { init, calculate, syncTotalPoints, syncEarnedPoints };
 })();
 
 const TeachersUI = (() => {
@@ -501,8 +627,11 @@ const TeachersUI = (() => {
 
     try {
       const params = base?.userId ? `?userId=${encodeURIComponent(base.userId)}` : '';
-      const { teacher, publicInfo } = await API.getTeacher(id, params);
-      const merged = mergeTeacher(base, publicInfo);
+      const { teacher, publicInfo, userInfo, email, schedule, schedule_updated_at } = await API.getTeacher(id, params);
+      const merged = [teacher, publicInfo, userInfo].reduce((acc, item) => mergeTeacher(acc, item), base);
+      merged.email = email || merged.email;
+      merged.schedule = schedule || [];
+      merged.scheduleUpdatedAt = schedule_updated_at || '';
       showDetail(merged, teacher, false);
     } catch (err) {
       showDetail(base, { error: err.message }, false);
@@ -528,6 +657,7 @@ const TeachersUI = (() => {
         <div class="teacher-modal-body">
           ${baseInfoHtml(base)}
           ${publicInfoHtml(base)}
+          ${teacherScheduleHtml(base)}
           ${isLoading ? '<div class="teacher-detail-card"><p class="muted-line">Загружаю подробную информацию...</p></div>' : detailHtml(detail)}
         </div>
       </section>`;
@@ -563,6 +693,124 @@ const TeachersUI = (() => {
       blocks.push(listSectionHtml('Преподаваемые курсы', teacher.taughtCourses));
     }
     return blocks.join('');
+  }
+
+  function teacherScheduleHtml(teacher) {
+    if (!teacher || !teacher.email) {
+      return `<div class="teacher-detail-card">
+        <div class="teacher-detail-title">Расписание</div>
+        <p class="muted-line">Email не найден, расписание недоступно.</p>
+      </div>`;
+    }
+
+    const items = normalizeTeacherSchedule(teacher.schedule || []);
+    const updated = teacher.scheduleUpdatedAt ? ` · ${PageHelpers.fmtDate(teacher.scheduleUpdatedAt)}` : '';
+    const grouped = groupTeacherSchedule(items);
+
+    return `<div class="teacher-detail-card">
+      <div class="teacher-detail-title">Расписание</div>
+      <div class="teacher-kv"><span>Email</span><b>${PageHelpers.escHtml(teacher.email)}</b></div>
+      <p class="muted-line">Наша база DU cache${PageHelpers.escHtml(updated)}</p>
+      ${items.length ? grouped.map(teacherScheduleDayHtml).join('') : '<p class="muted-line">В базе для этого преподавателя расписание пустое.</p>'}
+    </div>`;
+  }
+
+  function teacherScheduleDayHtml(day) {
+    return `<div class="weekday-block">
+      <div class="weekday-title">${PageHelpers.escHtml(day.label)}</div>
+      ${day.items.map((item) => `<div class="sch-item">
+        <div class="sch-line" style="background:var(--blue)"></div>
+        <div class="sch-time">${PageHelpers.escHtml([item.start, item.end].filter(Boolean).join('-') || '-')}</div>
+        <div class="sch-main">
+          <b>${PageHelpers.escHtml(item.title || 'Пара')}</b>
+          <span>${PageHelpers.escHtml([item.room, item.group, item.type].filter(Boolean).join(' · ') || 'Детали не указаны')}</span>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  function groupTeacherSchedule(items) {
+    const weekdays = [
+      ['1', 'Пн'],
+      ['2', 'Вт'],
+      ['3', 'Ср'],
+      ['4', 'Чт'],
+      ['5', 'Пт'],
+      ['6', 'Сб'],
+      ['0', 'Вс']
+    ];
+    return weekdays
+      .map(([id, label]) => ({ id, label, items: items.filter((item) => String(item.weekday) === id) }))
+      .filter((day) => day.items.length);
+  }
+
+  function field(item, keys) {
+    for (const key of keys) {
+      const value = item?.[key];
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return '';
+  }
+
+  function normalizeTeacherSchedule(payload) {
+    return collectTeacherScheduleItems(payload)
+      .map((item) => {
+        const slot = teacherSlotInfo(item);
+        return {
+          title: field(item, ['subject', 'disciplineName', 'discipline', 'subjectName', 'title']) || '',
+          type: field(item, ['lesson_type', 'lessonType', 'type', 'classType']) || '',
+          weekday: normalizeTeacherWeekday(field(item, ['classtime_day', 'dayOfWeek', 'weekDay', 'day', 'weekday']) || slot.day),
+          start: field(item, ['startTime', 'start', 'begin', 'from']) || slot.start,
+          end: field(item, ['endTime', 'end', 'finish', 'to']) || slot.finish,
+          room: field(item, ['room', 'classroom', 'cabinet', 'auditorium', 'classRoom', 'location']) || '',
+          group: field(item, ['groupName', 'group', 'groups', 'studentGroup', 'studentGroupName']) || ''
+        };
+      })
+      .filter((item) => item.title || item.start || item.room)
+      .sort((a, b) => `${a.weekday}-${a.start}`.localeCompare(`${b.weekday}-${b.start}`));
+  }
+
+  function collectTeacherScheduleItems(value, acc = []) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectTeacherScheduleItems(item, acc));
+      return acc;
+    }
+    if (!value || typeof value !== 'object') return acc;
+    if (
+      field(value, ['subject', 'disciplineName', 'discipline', 'subjectName', 'title']) ||
+      field(value, ['classtime_day', 'classtime_time', 'startTime', 'start', 'room', 'classRoom'])
+    ) {
+      acc.push(value);
+      return acc;
+    }
+    Object.values(value).forEach((item) => collectTeacherScheduleItems(item, acc));
+    return acc;
+  }
+
+  function normalizeTeacherWeekday(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (/^d[1-7]$/.test(raw)) return raw.slice(1) === '7' ? '0' : raw.slice(1);
+    if (/^[0-6]$/.test(raw)) return raw;
+    if (/^[1-7]$/.test(raw)) return raw === '7' ? '0' : raw;
+    return '';
+  }
+
+  function teacherSlotInfo(item) {
+    try {
+      const days = typeof item.days === 'string' ? JSON.parse(item.days) : item.days;
+      const dayKey = field(item, ['classtime_day']);
+      const timeKey = field(item, ['classtime_time']);
+      const slot = days?.[dayKey]?.[timeKey] ||
+        days?.[dayKey]?.[String(timeKey).toLowerCase()] ||
+        (Array.isArray(days?.time) ? days.time.find((item) => String(item.id).toLowerCase() === String(timeKey).toLowerCase()) : null);
+      return {
+        day: dayKey,
+        start: slot?.start || '',
+        finish: slot?.finish || slot?.end || ''
+      };
+    } catch (err) {
+      return { day: '', start: '', finish: '' };
+    }
   }
 
   function listSectionHtml(title, items) {
@@ -712,7 +960,7 @@ const TeachersUI = (() => {
       id: item.id || item.teacherId || item.teacher_id || item.userId || item.user_id || '',
       userId: item.userId || item.user_id || '',
       name: fullName || item.email || 'Преподаватель',
-      email: item.email || item.mail || item.corporateEmail || item.corporate_email || item.login || '',
+      email: item.email || item.username || item.mail || item.corporateEmail || item.corporate_email || item.login || '',
       department: department || item.departmentName || item.academicDepartment || item.academicDepartmentName || '',
       position: position || item.teacherPosition || item.teacherPositionName || '',
       scientificDegree,
@@ -744,20 +992,20 @@ const SyllabusUI = (() => {
     body.innerHTML = `
       <div class="dash-card full deadline-hero">
         <div>
-          <div class="dash-card-title">Силлабусы</div>
-          <p>Источник: DU. Для приватных данных нужен сохраненный DU token.</p>
+          <div class="dash-card-title">${PageText.t('syllabus.title')}</div>
+          <p>${PageText.t('syllabus.source')}</p>
         </div>
         <div class="deadline-count">${loading ? '...' : rows.length}</div>
       </div>
       <div class="dash-card full">
-        <label class="settings-field">Поиск
-          <input id="syllabus-query" placeholder="Дисциплина, код, школа, преподаватель" oninput="SyllabusUI.search()" />
+        <label class="settings-field">${PageText.t('syllabus.search')}
+          <input id="syllabus-query" placeholder="${PageText.t('syllabus.placeholder')}" oninput="SyllabusUI.search()" />
         </label>
         <div class="import-actions teacher-actions">
-          <button class="btn-save" onclick="SyllabusUI.refresh()">Обновить из DU</button>
+          <button class="btn-save" onclick="SyllabusUI.refresh()">${PageText.t('syllabus.refresh')}</button>
         </div>
       </div>
-      <div class="dash-card full teacher-results" id="syllabus-results">${loading ? '<p class="muted-line">Загружаю силлабусы...</p>' : loadError ? `<p class="muted-line">${PageHelpers.escHtml(loadError)}</p>` : resultsHtml(rows)}</div>`;
+      <div class="dash-card full teacher-results" id="syllabus-results">${loading ? `<p class="muted-line">${PageText.t('syllabus.loading')}</p>` : loadError ? `<p class="muted-line">${PageHelpers.escHtml(loadError)}</p>` : resultsHtml(rows)}</div>`;
   }
 
   async function loadSyllabuses() {
@@ -785,7 +1033,7 @@ const SyllabusUI = (() => {
   function search() {
     const query = (document.getElementById('syllabus-query')?.value || '').toLowerCase().trim();
     const filtered = query
-      ? rows.filter((row) => [row.title, row.code, row.department, row.teacher, row.meta].join(' ').toLowerCase().includes(query))
+      ? rows.filter((row) => [row.title, row.code, row.department, row.teacher, row.meta, row.fileName, row.academicYear].join(' ').toLowerCase().includes(query))
       : rows;
     document.getElementById('syllabus-results').innerHTML = resultsHtml(filtered);
   }
@@ -793,14 +1041,34 @@ const SyllabusUI = (() => {
   function resultsHtml(list) {
     return list.length ? list.map((item) => `<div class="teacher-card">
       <div class="teacher-name">${PageHelpers.escHtml(item.title)}</div>
-      <div class="teacher-meta">${PageHelpers.escHtml(item.meta || item.department || 'Детали не указаны')}</div>
-      <div class="teacher-mail">${PageHelpers.escHtml([item.code, item.teacher].filter(Boolean).join(' · ') || 'Код не указан')}</div>
-      ${item.id ? `<button class="teacher-more" onclick="SyllabusUI.openDetail('${jsString(item.id)}')">Открыть</button>` : ''}
-    </div>`).join('') : '<p class="muted-line">Силлабусы не найдены или DU не вернул данные.</p>';
+      <div class="teacher-meta">${PageHelpers.escHtml(item.meta || item.department || PageText.t('syllabus.noDetails'))}</div>
+      <div class="teacher-mail">${PageHelpers.escHtml([item.code, item.teacher, item.fileType ? item.fileType.toUpperCase() : ''].filter(Boolean).join(' · ') || PageText.t('syllabus.noCode'))}</div>
+      ${item.id ? `<button class="teacher-more" onclick="SyllabusUI.openDetail('${jsString(item.id)}')">${PageText.t('syllabus.open')}</button>` : ''}
+    </div>`).join('') : `<p class="muted-line">${PageText.t('syllabus.empty')}</p>`;
   }
 
   async function openDetail(id) {
     const base = rows.find((item) => String(item.id) === String(id));
+    if (base?.fileUrl) {
+      window.open(base.fileUrl, '_blank', 'noopener');
+      return;
+    }
+
+    if (String(id || '').startsWith('static:')) {
+      try {
+        const { syllabus } = await API.getSyllabus(id);
+        const fileUrl = syllabus?.file?.fileUrl;
+        if (fileUrl) {
+          window.open(fileUrl, '_blank', 'noopener');
+          return;
+        }
+      } catch (err) {
+        loadError = 'Ошибка открытия PDF: ' + err.message;
+        render();
+        return;
+      }
+    }
+
     showDetail(base, null, true);
 
     try {
@@ -856,6 +1124,13 @@ const SyllabusUI = (() => {
       return `<div class="teacher-detail-card"><p class="muted-line">Детали не загрузились: ${PageHelpers.escHtml(detail.error)}</p></div>`;
     }
     if (!detail) return '<div class="teacher-detail-card"><p class="muted-line">DU не вернул детали.</p></div>';
+    if (detail?.type === 'static-file' && detail.file?.fileUrl) {
+      return `<div class="teacher-detail-card">
+        <div class="teacher-detail-title">PDF файл</div>
+        <p class="muted-line">${PageHelpers.escHtml(detail.file.originalFileName || detail.file.fileName || 'Syllabus PDF')}</p>
+        <a class="btn-save" href="${PageHelpers.escHtml(detail.file.fileUrl)}" target="_blank" rel="noopener">Открыть PDF</a>
+      </div>`;
+    }
     return objectSectionHtml('Данные силлабуса', detail);
   }
 
@@ -917,6 +1192,10 @@ const SyllabusUI = (() => {
       department,
       teacher,
       credits,
+      fileUrl: item.fileUrl || '',
+      fileName: item.fileName || item.originalFileName || '',
+      fileType: item.fileType || '',
+      academicYear: item.academicYear || year,
       meta: [department, year, trim ? `trim ${trim}` : '', credits ? `${credits} credits` : ''].filter(Boolean).join(' · '),
       raw: item
     };
@@ -952,6 +1231,11 @@ const SyllabusUI = (() => {
 
 const MapUI = (() => ({ init: () => MapPage.init() }))();
 
+window.addEventListener('prefs:language-change', () => {
+  if (document.getElementById('page-attendance')?.classList.contains('active')) AttendanceUI.init();
+  if (document.getElementById('page-syllabus')?.classList.contains('active')) SyllabusUI.init();
+});
+
 const ProfileUI = (() => {
   function init() {
     render();
@@ -962,7 +1246,7 @@ const ProfileUI = (() => {
     if (!user) return;
 
     const settings = {
-      language: 'ru',
+      language: AppPrefs.getLanguage(),
       notifications: true,
       classReminderMinutes: 30,
       deadlineReminderHours: 24,
@@ -1006,20 +1290,6 @@ const ProfileUI = (() => {
       </div>
 
       <div class="profile-card">
-        <div class="pc-title">DU token</div>
-        <div class="profile-fields">
-          <label class="settings-field">DU email
-            <input id="pf-du-login" value="${PageHelpers.escHtml(user.du_login || user.email || '')}" placeholder="you@astanait.edu.kz" autocomplete="username" />
-          </label>
-          <label class="settings-field">Bearer token из DU
-            <textarea id="pf-du-token" rows="3" placeholder="eyJ..."></textarea>
-          </label>
-          <p class="settings-note">${user.du_connected ? `DU token сохранен${user.du_updated_at ? `: ${new Date(user.du_updated_at).toLocaleString('ru')}` : ''}. Если расписание перестало грузиться, вставь свежий token.` : 'DU использует Microsoft SSO, поэтому обычный логин/пароль здесь не подходит. Вставь Bearer token из Network.'}</p>
-        </div>
-        <button class="btn-save" onclick="ProfileUI.connectDu()">Сохранить DU token</button>
-      </div>
-
-      <div class="profile-card">
         <div class="pc-title">Язык</div>
         <label class="settings-field">Язык интерфейса
           <select id="set-language">
@@ -1044,6 +1314,36 @@ const ProfileUI = (() => {
         </label>
         <button class="btn-save" onclick="ProfileUI.saveSettings()">Сохранить настройки</button>
       </div>`;
+    wireProfilePreferences();
+  }
+
+  function wireProfilePreferences() {
+    const body = document.getElementById('profile-body');
+    const langSelect = document.getElementById('set-language');
+    if (langSelect) {
+      langSelect.innerHTML = `
+        <option value="kk">Қазақша</option>
+        <option value="ru">Русский</option>
+        <option value="en">English</option>`;
+      langSelect.value = AppPrefs.getLanguage();
+      langSelect.onchange = () => AppPrefs.setLanguage(langSelect.value);
+    }
+
+    if (!body || document.getElementById('theme-select')) return;
+    body.insertAdjacentHTML('beforeend', `
+      <div class="profile-card">
+        <div class="pc-title">${AppPrefs.t('prefs.appearance')}</div>
+        <label class="settings-field">${AppPrefs.t('prefs.themeLabel')}
+          <select id="theme-select">
+            <option value="light">${AppPrefs.t('prefs.light')}</option>
+            <option value="dark">${AppPrefs.t('prefs.dark')}</option>
+          </select>
+        </label>
+      </div>`);
+
+    const themeSelect = document.getElementById('theme-select');
+    themeSelect.value = AppPrefs.getTheme();
+    themeSelect.onchange = () => AppPrefs.setTheme(themeSelect.value);
   }
 
   async function saveProfile() {
@@ -1065,7 +1365,7 @@ const ProfileUI = (() => {
     const current = Auth.getUser()?.settings || {};
     const settings = {
       ...current,
-      language: document.getElementById('set-language')?.value || 'ru',
+      language: AppPrefs.getLanguage(),
       notifications: Boolean(document.getElementById('set-notifications')?.checked),
       classReminderMinutes: Number(document.getElementById('set-class-min')?.value || 30),
       deadlineReminderHours: Number(document.getElementById('set-deadline-hours')?.value || 24)

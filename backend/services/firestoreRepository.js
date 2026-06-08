@@ -28,6 +28,9 @@ function cleanUser(id, data) {
       language: 'ru',
       notifications: true,
       theme: 'dark',
+      classReminderMinutes: 30,
+      deadlineReminderHours: 24,
+      urgentDeadlineHours: 6,
       ...(safe.settings || {})
     },
     createdAt: safe.createdAt?.toDate?.()?.toISOString?.() || safe.createdAt || null,
@@ -79,7 +82,14 @@ async function createUser({ name, email, password, group, telegram_id = '', cale
     calendar_url,
     avatar: '',
     role: 'student',
-    settings: { language: 'ru', notifications: true, theme: 'dark' },
+    settings: {
+      language: 'ru',
+      notifications: true,
+      theme: 'dark',
+      classReminderMinutes: 30,
+      deadlineReminderHours: 24,
+      urgentDeadlineHours: 6
+    },
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
@@ -191,6 +201,28 @@ async function createNotification(userId, payload) {
   return { id: ref.id, ...payload };
 }
 
+async function listTelegramNotificationUsers() {
+  const snapshot = await db.collection('users').where('telegram_id', '!=', '').get();
+  return snapshot.docs
+    .map((doc) => cleanUser(doc.id, doc.data()))
+    .filter((user) => user.telegram_id && user.settings?.notifications !== false);
+}
+
+async function hasNotification(notificationKey) {
+  const doc = await db.collection('notifications').doc(notificationKey).get();
+  return doc.exists;
+}
+
+async function markNotificationSent(notificationKey, userId, payload) {
+  await db.collection('notifications').doc(notificationKey).set({
+    user_id: userId,
+    status: 'sent',
+    sent_at: nowIso(),
+    createdAt: serverTimestamp(),
+    ...payload
+  }, { merge: true });
+}
+
 module.exports = {
   findUserByEmail,
   findUserByTelegramId,
@@ -206,5 +238,8 @@ module.exports = {
   appendMessages,
   saveEventsCache,
   getEventsCache,
-  createNotification
+  createNotification,
+  listTelegramNotificationUsers,
+  hasNotification,
+  markNotificationSent
 };

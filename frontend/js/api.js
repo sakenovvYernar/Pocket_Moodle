@@ -2,7 +2,10 @@
 //  api.js — HTTP клиент для бэкенда
 // ============================================
 const API = (() => {
-  const BASE = '/api'; // Бэкенд на том же хосте
+  const isLocalFrontend =
+    location.protocol === 'file:' ||
+    (['localhost', '127.0.0.1'].includes(location.hostname) && location.port && location.port !== '3001');
+  const BASE = isLocalFrontend ? 'http://localhost:3001/api' : '/api';
 
   function token() { return localStorage.getItem('aitu_token'); }
 
@@ -11,11 +14,16 @@ const API = (() => {
     if (token()) headers['Authorization'] = 'Bearer ' + token();
     Object.assign(headers, extraHeaders);
 
-    const res = await fetch(BASE + path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    });
+    let res;
+    try {
+      res = await fetch(BASE + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch (err) {
+      throw new Error(`Не удалось подключиться к серверу (${BASE}). Проверь, что backend запущен на http://localhost:3001.`);
+    }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -57,23 +65,18 @@ const API = (() => {
     // DU public teachers
     getTeachers: (params = '')             => req('GET', `/teachers${params}`),
     getTeacher:  (id, params = '')         => req('GET', `/teachers/${id}${params}`),
-    getTeacherSchedule: (email, duToken = '') => req(
-      'GET',
-      `/teachers/schedule/by-email/${encodeURIComponent(email)}`,
-      null,
-      duToken ? { 'X-DU-Token': duToken } : {}
-    ),
+    getTeacherSchedule: (email) => req('GET', `/du/teacher-schedule/${encodeURIComponent(email)}`),
 
-    // DU student data. DU token is optional and normally handled server-side.
-    getDuGroupSchedule: (groupName, duToken = '') => req(
-      'GET',
-      `/du/schedule/group/${encodeURIComponent(groupName)}`,
-      null,
-      duToken ? { 'X-DU-Token': duToken } : {}
-    ),
-    getDuMySchedule: () => req('GET', '/du/schedule/me'),
+    // DU cached data
     connectDu: (token, login = '') => req('POST', '/du/auth/token', { token, login }),
+    getDuMySchedule: () => req('GET', '/du/schedule/me'),
+    getDuGroupSchedule: (group) => req('GET', `/du/schedule/group/${encodeURIComponent(group)}`),
     getSyllabuses: () => req('GET', '/du/syllabus/all'),
     getSyllabus: (id) => req('GET', `/du/syllabus/data/${encodeURIComponent(id)}`),
+    syncDuSchedules: (groups, duToken = '') => req('POST', '/du/cache/schedules', { groups, duToken }),
+    syncKnownDuSchedules: (duToken = '') => req('POST', '/du/cache/schedules/known', { duToken }),
+    syncDuTeacherSchedules: (emails, duToken = '') => req('POST', '/du/cache/teacher-schedules', { emails, duToken }),
+    syncDuSyllabuses: (duToken = '') => req('POST', '/du/cache/syllabuses', { duToken }),
+    syncDuSyllabusDetails: (ids, duToken = '') => req('POST', '/du/cache/syllabus-details', { ids, duToken }),
   };
 })();

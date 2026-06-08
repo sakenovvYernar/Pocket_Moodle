@@ -35,7 +35,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(247, 250, 248, 0.86);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -47,11 +47,11 @@
 
 .map-info {
   background: var(--bg2);
-  border-radius: var(--r-md);
+  border-radius: var(--r);
   padding: 32px;
   max-width: 500px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--sh3);
   border: 1px solid var(--b1);
   position: relative;
 }
@@ -91,7 +91,7 @@
 .feature-item:hover {
   background: var(--bg3);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--sh1);
 }
 
 .feature-icon {

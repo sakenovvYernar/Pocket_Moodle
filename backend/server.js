@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 
 require('./config/firebase');
+const { startTelegramBot } = require('./services/tgService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,4 +36,7 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server started: http://localhost:${PORT}`);
+  startTelegramBot().catch((err) => {
+    console.error('Telegram bot start error:', err);
+  });
 });

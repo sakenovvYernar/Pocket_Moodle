@@ -378,7 +378,8 @@
 .teacher-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.58);
+  background: rgba(23,49,38,.18);
+  backdrop-filter: blur(4px);
 }
 .teacher-modal-panel {
   position: absolute;

@@ -3,7 +3,6 @@ const router = express.Router();
 const authGuard = require('../middleware/auth');
 const repo = require('../services/firestoreRepository');
 const duCache = require('../services/duCacheService');
-const calendar = require('../services/calendarService');
 
 function normalizeGroup(value = '') {
   return String(value || '').trim().toUpperCase();
@@ -51,26 +50,6 @@ router.get('/schedule/me', authGuard, async (req, res) => {
   try {
     const user = await repo.getUserById(req.user._id);
     const group = normalizeGroup(user?.group || req.user.group);
-    if (user?.calendar_url) {
-      const cache = await repo.getEventsCache(req.user._id);
-      let events = cache.events || [];
-      let updatedAt = cache.updated_at || null;
-
-      if (!events.length) {
-        events = await calendar.refreshUserCalendar(user);
-        updatedAt = new Date().toISOString();
-      }
-
-      if (events.length) {
-        return res.json({
-          group,
-          schedule: events,
-          source: { type: 'moodle-calendar', updated_at: updatedAt },
-          updated_at: updatedAt,
-          cached: true
-        });
-      }
-    }
     if (!group) return res.status(400).json({ error: 'В профиле не указана группа.' });
 
     const cached = await duCache.getCachedGroupSchedule(group);

@@ -105,12 +105,18 @@ const Auth = (() => {
   function logout() {
     localStorage.removeItem('aitu_token');
     currentUser = null;
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
+    enterAuth();
     ChatUI.reset();
   }
 
+  function enterAuth() {
+    if (typeof Landing !== 'undefined') Landing.hide();
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+
   function enterApp() {
+    if (typeof Landing !== 'undefined') Landing.hide();
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     ChatUI.init();
@@ -131,5 +137,5 @@ const Auth = (() => {
     }
   }
 
-  return { login, register, logout, getUser, setUser, initTabs, tryRestoreSession, enterApp };
+  return { login, register, logout, getUser, setUser, initTabs, tryRestoreSession, enterAuth, enterApp };
 })();
